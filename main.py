@@ -7,15 +7,18 @@ from PIL import Image
 
 parser = argparse.ArgumentParser()
 parser.add_argument("sprite_folder", help="Directory that contain all 8x8 sprites")
-parser.add_argument("x", help="honrizontal size of the map", type=int)
-parser.add_argument("y", help="vertical size of the map", type=int)
+parser.add_argument("-x", help="honrizontal size of the map", type=int)
+parser.add_argument("-y", help="vertical size of the map", type=int)
+parser.add_argument("--load", help="Load the given file")
 
 FILE_REGEX = re.compile(r"([sn])(\d\d?)(.*)")
 
 palettes = []
 
 class Tile:
+
     def __init__(self, file):
+        global palettes
         with open(file, 'rb') as fd:
             img = Image.open(fd)
             if img.size != (8, 8):
@@ -34,8 +37,9 @@ class Tile:
         if self.id not in range(0, 16):
             raise Exception(f"Image ID must be between 0 and 15, but it was {self.id}")
         self.description = match[3]
-        tmp_pal = Palette(self.pal_file_name)
+        tmp_pal = Palette.from_file(self.pal_file_name)
         if tmp_pal not in palettes:
+            print(f"Added new palette {tmp_pal.bytes} from {self.pal_file_name}")
             palettes.append(tmp_pal)
             if len(palettes) > 8:
                 raise Exception("Too many palette, you can't have more than 8")
@@ -45,14 +49,29 @@ class Tile:
     def to_byte(self):
         return ((self.pal_id << 5) + (self.is_solid << 4) + self.id).to_bytes(1, "big")
 
+    def is_equal(self, byte) -> bool:
+        return self.to_byte() == byte
+
+    @classmethod
+    def from_bytes(cls, byte, tiles):
+        for tile in tiles:
+            if tile.is_equal(byte):
+                return tile
+        raise Exception(f"Tile {byte} was not found")
+
+
 
 class Palette:
-    def __init__(self, file):
+    def __init__(self, value):
+        self.bytes = value
+
+    @classmethod
+    def from_file(cls, file):
         with open(file, 'rb') as fd:
-            self.bytes = fd.read()
+            return cls(fd.read())
 
     def __eq__(self, other):
-        return self.bytes != other.bytes
+        return self.bytes == other.bytes
 
 
 
@@ -81,22 +100,39 @@ class Map:
                 + b''.join([p.bytes for p in palettes]) + b'\x00' * 8 * (8 - len(palettes)) + b''.join([i.to_byte() for i in self.tiles])
                 )
 
+    @classmethod
+    def load(cls, file, tiles):
+        with open(file, 'rb') as fd:
+            total_size = int.from_bytes(fd.read(2), "big")
+            x = fd.read(1)[0]
+            y = fd.read(1)[0]
+            self = cls(x, y, tiles[0])
+            global palettes
+            palettes = [Palette(fd.read(8)) for i in range(8)]
+            self.tiles = [Tile.from_bytes(fd.read(1), tiles) for i in range(total_size)]
+            return self
+
 
 def main(args):
-    sprites = [Tile(f"{args.sprite_folder}/{i}") for i in os.listdir(args.sprite_folder) if i.endswith('.png')]
+    sprites = [Tile(f"{args.sprite_folder}/{i}") for i in sorted(os.listdir(args.sprite_folder)) if i.endswith('.png')]
     #if len(sprites) != palettes:
     #    raise Exception(f"You must have the same number of sprites and palettes, found {sprites} sprites and {palettes} palettes")
 
+    if args.load:
+        game_map = Map.load(args.load, sprites)
+    else:
+        if args.x is None or args.y is None:
+            Exception("Invalid Usage: ./main.py sprite_folder -x [x] -y [y]")
+        game_map = Map(args.x, args.y, sprites[0])
+
     pygame.init()
-     # scale_ratio = 1000 //  max(args.x, args.y)
-    window_surface = pygame.display.set_mode((args.x * 8, args.y * 8), flags=pygame.RESIZABLE)
+    window_surface = pygame.display.set_mode((game_map.size_x * 8, game_map.size_y * 8), flags=pygame.RESIZABLE)
 
-    surface = pygame.Surface((args.x * 8, args.y * 8))
-    for i in range(args.x):
-        for j in range(args.y):
-            surface.blit(sprites[0].pyg_image, (i * 8, j * 8))
+    surface = pygame.Surface((game_map.size_x * 8, game_map.size_y * 8))
+    for i in range(game_map.size_x):
+        for j in range(game_map.size_y):
+                surface.blit(game_map[i, j].pyg_image, (i * 8, j * 8))
 
-    game_map = Map(args.x, args.y, sprites[0])
     selected = 0
 
     while True:
