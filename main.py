@@ -39,7 +39,8 @@ class Tile:
 
 class Palette:
     def __init__(self, file):
-        self.bytes = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        with open(file, 'rb') as fd:
+            self.bytes = fd.read()
 
 
 
@@ -64,7 +65,7 @@ class Map:
             raise TypeError("Map.__setitem__ key must be a tuple")
 
     def to_bytes(self):
-        return (self.total_size.to_bytes(2, "little") + self.size_x.to_bytes(1, "big") + self.size_y.to_bytes(1, "big")
+        return (self.total_size.to_bytes(2, "big") + self.size_x.to_bytes(1, "big") + self.size_y.to_bytes(1, "big")
                 + b''.join([p.bytes for p in palettes]) + b'\x00' * 8 * (8 - len(palettes)) + b''.join([i.to_byte() for i in self.tiles])
                 )
 
