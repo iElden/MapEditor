@@ -23,7 +23,9 @@ class Tile:
             self.pil_img = img
             self.pyg_image = pygame.image.fromstring(img.tobytes(), img.size, img.mode)
         self.file_name = file
-        self.name = (file.rsplit('/', 1)[1]).split('.', 1)[0]
+        self.name_no_ex = file.split('.', 1)[0]
+        self.pal_file_name = self.name_no_ex + '.pal'
+        self.name = self.name_no_ex.rsplit('/', 1)[1]
         match = FILE_REGEX.match(self.name)
         if not match:
             raise Exception(f"File named \"{self.name}\" must match regular expression {FILE_REGEX.pattern}")
@@ -32,15 +34,25 @@ class Tile:
         if self.id not in range(0, 16):
             raise Exception(f"Image ID must be between 0 and 15, but it was {self.id}")
         self.description = match[3]
+        tmp_pal = Palette(self.pal_file_name)
+        if tmp_pal not in palettes:
+            palettes.append(tmp_pal)
+            if len(palettes) > 8:
+                raise Exception("Too many palette, you can't have more than 8")
+        self.pal_id = palettes.index(tmp_pal)
+
 
     def to_byte(self):
-        return ((0 << 5) + (self.is_solid << 4) + self.id).to_bytes(1, "big")
+        return ((self.pal_id << 5) + (self.is_solid << 4) + self.id).to_bytes(1, "big")
 
 
 class Palette:
     def __init__(self, file):
         with open(file, 'rb') as fd:
             self.bytes = fd.read()
+
+    def __eq__(self, other):
+        return self.bytes != other.bytes
 
 
 
@@ -109,7 +121,6 @@ def main(args):
                 clickx, clicky = pygame.mouse.get_pos()
                 real_x = int(clickx / window_surface.get_size()[0] * game_map.size_x)
                 real_y = int(clicky / window_surface.get_size()[1] * game_map.size_y)
-                print(f"{clickx}:{clicky} => {real_x}:{real_y}")
                 game_map[real_x, real_y] = sprites[selected]
                 surface.blit(sprites[selected].pyg_image, (real_x * 8, real_y * 8))
 
