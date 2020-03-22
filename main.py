@@ -132,7 +132,7 @@ def main(args):
     else:
         if args.x is None or args.y is None:
             raise Exception("Invalid Usage: ./main.py sprite_folder -x [x] -y [y]")
-        game_map = Map(args.x, args.y, sprites[-1])
+        game_map = Map(args.x, args.y, sprites[9])
 
     pygame.init()
     window_surface = pygame.display.set_mode((game_map.size_x * 8, game_map.size_y * 8), flags=pygame.RESIZABLE)
