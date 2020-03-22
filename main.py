@@ -48,6 +48,9 @@ class Tile:
         # HOTFIX
         if self.pal_id > 7: self.pal_id = 7
 
+    def __repr__(self):
+        return f"<Tile {self.name}: {self.to_byte()}>"
+
 
     def to_byte(self):
         return ((self.pal_id << 5) + (self.is_solid << 4) + self.id).to_bytes(1, "big")
@@ -99,7 +102,7 @@ class Map:
             raise TypeError("Map.__setitem__ key must be a tuple")
 
     def to_bytes(self):
-        return (self.total_size.to_bytes(2, "big") + self.size_x.to_bytes(1, "big") + self.size_y.to_bytes(1, "big")
+        return (self.total_size.to_bytes(2, "big") + self.size_x.to_bytes(1, "big") + self.size_y.to_bytes(1, "big") + b"\xc9*KL"
                 + b''.join([p.bytes for p in palettes]) + b'\x00' * 8 * (8 - len(palettes)) + b''.join([i.to_byte() for i in self.tiles])
                 )
 
@@ -117,7 +120,7 @@ class Map:
 
 
 def main(args):
-    sprites = [Tile(f"{args.sprite_folder}/{i}") for i in sorted(os.listdir(args.sprite_folder)) if i.endswith('.png')]
+    sprites = [Tile(f"{args.sprite_folder}/{i}") for i in sorted(os.listdir(args.sprite_folder)) if i.endswith('.png')])
     #if len(sprites) != palettes:
     #    raise Exception(f"You must have the same number of sprites and palettes, found {sprites} sprites and {palettes} palettes")
 
