@@ -123,7 +123,7 @@ class Map:
 
 
 def main(args):
-    sprites = [Tile(f"{os.path.abspath(i)}") for i in sorted(os.listdir(args.sprite_folder)) if i.endswith('.png')]
+    sprites = [Tile(os.path.abspath(f"{args.sprite_folder}/{i}")) for i in sorted(os.listdir(args.sprite_folder)) if i.endswith('.png')]
     #if len(sprites) != palettes:
     #    raise Exception(f"You must have the same number of sprites and palettes, found {sprites} sprites and {palettes} palettes")
 
