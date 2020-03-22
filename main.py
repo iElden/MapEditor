@@ -112,6 +112,7 @@ class Map:
             total_size = int.from_bytes(fd.read(2), "big")
             x = fd.read(1)[0]
             y = fd.read(1)[0]
+            tags = fd.read(4)
             self = cls(x, y, tiles[0])
             global palettes
             palettes = [Palette(fd.read(8)) for i in range(8)]
