@@ -42,8 +42,11 @@ class Tile:
             print(f"Added new palette {tmp_pal.bytes} from {self.pal_file_name}")
             palettes.append(tmp_pal)
             if len(palettes) > 8:
-                raise Exception("Too many palette, you can't have more than 8")
+                print(f"WARNING {len(palettes)} détectés")
+                # raise Exception("Too many palette, you can't have more than 8")
         self.pal_id = palettes.index(tmp_pal)
+        # HOTFIX
+        if self.pal_id > 7: self.pal_id = 7
 
 
     def to_byte(self):
@@ -123,7 +126,7 @@ def main(args):
     else:
         if args.x is None or args.y is None:
             Exception("Invalid Usage: ./main.py sprite_folder -x [x] -y [y]")
-        game_map = Map(args.x, args.y, sprites[0])
+        game_map = Map(args.x, args.y, sprites[-1])
 
     pygame.init()
     window_surface = pygame.display.set_mode((game_map.size_x * 8, game_map.size_y * 8), flags=pygame.RESIZABLE)
